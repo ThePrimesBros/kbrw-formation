@@ -1,13 +1,11 @@
-    Why use an ETS table ?
-    - Permet de stocker efficacement la donnée et de pouvoir la partager entre les processus
-    What are the advantages of wrapping an ETS table inside a GenServer ?
-    - Permet de créé un logique métier pour accéder au donnée de la table ets
-    What is a Behaviour in Elixir ?
-    - Ensemble de fonction qu'un module peut/doit implementer
 
-Go further
-
-    What are the differences between a Protocol and a Behaviour ?
-    - Un behaviour est un ensemble de fonction api qu'un module doit implementer alors qu'un protocol est un ensemble d'implementation polymorphique qui permet d'ajouter/modifier des fonctions sans touché au code sources
-    In which cases would you want to use a Protocol ? a Behaviour ?
-    - On va utilisé les protocol lorsque l'on voudra travaillé avec les données pour modifier sans touché au code sources et sinon les behaviour
+    What are the Plugs
+    - La base des web servers, c'est ce qui permet de concevoir et généré des application web avec des fonctions
+    What utilities do they have ?
+    - Permet de créé des routes API par example pour retourner des informations, ou du texte
+    What should defmacro return ?
+    Il retourne un AST absrat syntax tree. Ils sont utilisé pour généré du code plus facile a compilé et facilement réutilisable
+    Why use the Poison dependency ?
+    - Permet de gérer la transformation des caractère speciaux quand on passe d'un json à un array
+    What does the use keyword do ? What are the differences with require ?
+    - Use est utilisé pour implémenter des modules dans d'autre module principalement. Require sera utilisé plus souvent pour des composant externe
