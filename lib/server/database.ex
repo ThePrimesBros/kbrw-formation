@@ -48,31 +48,58 @@ defmodule MyServer.Database do
     {:reply, hd(value), ets}
   end
 
-  def search(data_list, criteria) when is_list(criteria) do
+  defmodule Query do
+    defstruct criteria: %{}
+  end
+
+  # Define a function to handle search queries
+  def search(server, criteria) do
+    GenServer.call(server, {:search, criteria})
+  end
+
+  def handle_call({:search, query}, _from, data) do
     matching_values =
-      Enum.filter(data_list, fn value ->
-        value_matches_criteria({:ok, value}, criteria)
+      Enum.filter(data, fn value ->
+        value_matches_criteria({:ok, value}, query.criteria)
       end)
 
     case matching_values do
       [] ->
-        {:error, "No matching values found."}
+        {:reply, {:error, "No matching values found."}, data}
+
       _ ->
-        {:ok, matching_values}
+        {:reply, {:ok, matching_values}, data}
     end
   end
 
-  # ...
-
-  # Modify the value_matches_criteria function to accept {:ok, value} directly
   defp value_matches_criteria({:ok, value}, criteria) when is_list(criteria) do
     Enum.all?(criteria, fn {key, expected_value} ->
-      case Map.get(value, key) do
-        nil -> false
-        actual_value when actual_value == expected_value -> true
-        _ -> false
+      case value do
+        map when is_map(map) ->
+          case Map.get(map, key) do
+            actual_value when actual_value == expected_value -> true
+            _ -> false
+          end
+
+        list when is_list(list) ->
+          Enum.any?(list, fn item ->
+            value_matches_criteria({:ok, item}, criteria)
+          end)
+
+        _ ->
+          false
       end
     end)
   end
 
+  # Get all values from the database
+  def get_all_values(server) do
+    GenServer.call(server, :get_all_values)
+  end
+
+  # Add the corresponding GenServer callback for handling :get_all_values
+  def handle_call(:get_all_values, _from, ets) do
+    values = :ets.tab2list(ets)
+    {:reply, values, ets}
+  end
 end

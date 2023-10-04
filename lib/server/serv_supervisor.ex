@@ -7,9 +7,9 @@ defmodule MyServer.ServSupervisor do
 
   def init([]) do
     children = [
-      {MyServer.Database, [], restart: :temporary}
+      {MyServer.Database, []}
     ]
 
-    Supervisor.init(children, strategy: :one_for_one)
+    Supervisor.start_link(children, strategy: :one_for_all)
   end
 end

@@ -7,13 +7,13 @@ defmodule Formation.Application do
 
   @impl true
   def start(_type, _args) do
+    import Supervisor.Spec, warn: false
+
     children = [
-      # Starts a worker by calling: Formation.Worker.start_link(arg)
-      # {Formation.Worker, arg}
+      {Plug.Cowboy, scheme: :http, plug: Server.Router, options: [port: 8080]},
+      worker(MyServer.Database, [])
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Formation.Supervisor]
     Supervisor.start_link(children, opts)
   end
