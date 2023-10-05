@@ -1,13 +1,10 @@
-    Why use an ETS table ?
-    - Permet de stocker efficacement la donnée et de pouvoir la partager entre les processus
-    What are the advantages of wrapping an ETS table inside a GenServer ?
-    - Permet de créé un logique métier pour accéder au donnée de la table ets
-    What is a Behaviour in Elixir ?
-    - Ensemble de fonction qu'un module peut/doit implementer
 
-Go further
-
-    What are the differences between a Protocol and a Behaviour ?
-    - Un behaviour est un ensemble de fonction api qu'un module doit implementer alors qu'un protocol est un ensemble d'implementation polymorphique qui permet d'ajouter/modifier des fonctions sans touché au code sources
-    In which cases would you want to use a Protocol ? a Behaviour ?
-    - On va utilisé les protocol lorsque l'on voudra travaillé avec les données pour modifier sans touché au code sources et sinon les behaviour
+    Define transpiling
+    - La transpilation est le principe de passé d'une certain version de code à un autre (JS->JSX, TS->TSX, TS->JS...)
+    Why use Babel ?
+    - Permet de faire de al transpilation entre différente version de langage de programmation pour une meilleur maintenance sur les différents navigateur
+    Why use Webpack ?
+    - Webpack est un compilateur utilisé pour compilé du code en un seul fichier pour faciliter le développement d'application
+    Can we use Babel without Webpack ?
+    - Oui tout à fait, Babel étant un transpilateur, et webpack un compilateur, on peut très bien avoir sur certain projet babel pour transpilé du SCSS en CSS sans avoir besoin d'utilisé webpack. Aujourd'hui webpack est beaucoup utilisé car justement il utilise babel pour faciliter se processus (tout en permettant la compilation du code)
+    
