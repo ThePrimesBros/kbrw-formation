@@ -57,6 +57,7 @@ defmodule MyServer.Database do
     case matching_values do
       [] ->
         {:error, "No matching values found."}
+
       _ ->
         {:ok, matching_values}
     end
@@ -75,4 +76,14 @@ defmodule MyServer.Database do
     end)
   end
 
+  # Get all values from the database
+  def get_all_values(server) do
+    GenServer.call(server, :get_all_values)
+  end
+
+  # Add the corresponding GenServer callback for handling :get_all_values
+  def handle_call(:get_all_values, _from, ets) do
+    values = :ets.tab2list(ets)
+    {:reply, values, ets}
+  end
 end
