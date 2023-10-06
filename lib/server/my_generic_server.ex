@@ -1,12 +1,13 @@
 defmodule MyGenericServer do
   # Function to start the server process
-  def start_link(callback_module, server_state) do
-    {:ok, pid} = spawn_link(__MODULE__, :loop, [{callback_module, server_state}])
+  def start_link(callback_module, server_initial_state) do
+    #IO.inspect(spawn_link(__MODULE__, :loop, [{callback_module, server_state}]))
+    pid = spawn_link(fn -> loop({callback_module, server_initial_state}) end)
     {:ok, pid}
   end
 
   # Main loop function
-  defp loop({callback_module, state}) do
+  def loop({callback_module, state}) do
     receive do
       {:cast, request} ->
         new_state = handle_cast(callback_module, request, state)
@@ -33,7 +34,7 @@ defmodule MyGenericServer do
     end
   end
 
-  # Function to handle cast requests
+  # # Function to handle cast requests
   defp handle_cast(callback_module, request, state) do
     apply(callback_module, :handle_cast, {request, state})
   end
