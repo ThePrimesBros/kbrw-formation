@@ -10,15 +10,16 @@ defmodule MyGenericServer do
   def loop({callback_module, state}) do
     receive do
       {:cast, request} ->
-        new_state = handle_cast(callback_module, request, state)
+        new_state = callback_module.handle_cast(request, state)
         loop({callback_module, new_state})
 
       {:call, from, request} ->
-        {response, new_state} = handle_call(callback_module, request, state)
+        response = callback_module.handle_call(request, state)
         send(from, {:reply, response})
-        loop({callback_module, new_state})
+        loop({callback_module, state})
     end
   end
+
 
   # Wrapper for cast operations
   def cast(pid, request) do
@@ -32,15 +33,5 @@ defmodule MyGenericServer do
     receive do
       {:reply, response} -> response
     end
-  end
-
-  # # Function to handle cast requests
-  defp handle_cast(callback_module, request, state) do
-    apply(callback_module, :handle_cast, {request, state})
-  end
-
-  # Function to handle call requests
-  defp handle_call(callback_module, request, state) do
-    apply(callback_module, :handle_call, {request, state})
   end
 end
