@@ -48,10 +48,10 @@ defmodule MyServer.Database do
     {:reply, hd(value), ets}
   end
 
-  def search(data_list, criteria) when is_list(criteria) do
+  def search(data_list, criteria_list) when is_list(criteria_list) do
     matching_values =
       Enum.filter(data_list, fn value ->
-        value_matches_criteria({:ok, value}, criteria)
+        value_matches_criteria({:ok, value}, criteria_list)
       end)
 
     case matching_values do
@@ -63,11 +63,9 @@ defmodule MyServer.Database do
     end
   end
 
-  # ...
-
   # Modify the value_matches_criteria function to accept {:ok, value} directly
-  defp value_matches_criteria({:ok, value}, criteria) when is_list(criteria) do
-    Enum.all?(criteria, fn {key, expected_value} ->
+  defp value_matches_criteria({:ok, value}, criteria_list) when is_list(criteria_list) do
+    Enum.any?(criteria_list, fn {key, expected_value} ->
       case Map.get(value, key) do
         nil -> false
         actual_value when actual_value == expected_value -> true
