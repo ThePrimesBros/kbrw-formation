@@ -23,10 +23,16 @@ defmodule Server.Router do
     id = params.query_params["id"]
     value = params.query_params["value"]
 
-    # Define the search criteria as a map
+    data_list = MyServer.Database.get_all_values(MyServer.Database)
+
+    transformed_data =
+      Enum.map(data_list, fn {key, value} ->
+        %{key => value}
+      end)
+
     criteria = [{id, value}]
 
-    case MyServer.Database.search(MyServer.Database, criteria) do
+    case MyServer.Database.search(transformed_data, criteria) do
       {:ok, db_value} ->
         send_resp(conn, 200, "Matching values: #{inspect(db_value)}")
 

@@ -53,41 +53,28 @@ defmodule MyServer.Database do
   end
 
   # Define a function to handle search queries
-  def search(server, criteria) do
-    GenServer.call(server, {:search, criteria})
-  end
-
-  def handle_call({:search, query}, _from, data) do
+  def search(data_list, criteria_list) when is_list(criteria_list) do
     matching_values =
-      Enum.filter(data, fn value ->
-        value_matches_criteria({:ok, value}, query.criteria)
+      Enum.filter(data_list, fn value ->
+        value_matches_criteria({:ok, value}, criteria_list)
       end)
 
     case matching_values do
       [] ->
-        {:reply, {:error, "No matching values found."}, data}
+        {:error, "No matching values found."}
 
       _ ->
-        {:reply, {:ok, matching_values}, data}
+        {:ok, matching_values}
     end
   end
 
-  defp value_matches_criteria({:ok, value}, criteria) when is_list(criteria) do
-    Enum.all?(criteria, fn {key, expected_value} ->
-      case value do
-        map when is_map(map) ->
-          case Map.get(map, key) do
-            actual_value when actual_value == expected_value -> true
-            _ -> false
-          end
-
-        list when is_list(list) ->
-          Enum.any?(list, fn item ->
-            value_matches_criteria({:ok, item}, criteria)
-          end)
-
-        _ ->
-          false
+  # Modify the value_matches_criteria function to accept {:ok, value} directly
+  defp value_matches_criteria({:ok, value}, criteria_list) when is_list(criteria_list) do
+    Enum.any?(criteria_list, fn {key, expected_value} ->
+      case Map.get(value, key) do
+        nil -> false
+        actual_value when actual_value == expected_value -> true
+        _ -> false
       end
     end)
   end
