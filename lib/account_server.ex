@@ -7,3 +7,10 @@ defmodule AccountServer do
     MyGenericServer.start_link(__MODULE__, initial_amount)
   end
 end
+
+# {:ok, my_account} = AccountServer.start_link(4)
+# MyGenericServer.cast(my_account, {:credit, 5})
+# MyGenericServer.cast(my_account, {:credit, 2})
+# MyGenericServer.cast(my_account, {:debit, 3})
+# amount = MyGenericServer.call(my_account, :get)
+# IO.puts "current credit hold is #{amount}"
