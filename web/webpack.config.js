@@ -3,7 +3,7 @@ var path = require('path'),
     CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
 
 module.exports = {
-    entry: './script.js',
+    entry: './app.js',
     mode: 'development',
     devtool: 'inline-source-map',
     output: {
@@ -28,7 +28,7 @@ module.exports = {
                         presets: [
                             ["@babel/preset-env", { "targets": "defaults" }],
                             "@babel/preset-react",
-                            ["@kbrw/jsxz", { dir: 'webflow' }]
+                            ["@kbrw/jsxz", { dir: 'tuto.webflow' }]
                         ],
                     }
                 },
