@@ -20,10 +20,7 @@ module.exports = {
             {
                 test: /.js?$/,
                 use: {
-                    loader: {
-                        test: /\.(css)$/,
-                        use: [{ loader: MiniCssExtractPlugin.loader }, { loader: "css-loader" }]
-                    },
+                    loader: 'babel-loader',
                     options: {
                         presets: [
                             ["@babel/preset-env", { "targets": "defaults" }],
@@ -33,6 +30,10 @@ module.exports = {
                     }
                 },
                 exclude: /node_modules/
+            },
+            {
+                test: /\.(css)$/,
+                use: [{ loader: MiniCssExtractPlugin.loader }, { loader: "css-loader" }]
             }
         ]
     },

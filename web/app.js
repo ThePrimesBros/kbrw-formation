@@ -5,8 +5,8 @@ var React = require("react")
 var createReactClass = require('create-react-class')
 
 /* required css for our application */
-// require('./tuto.webflow/css/webflow.css');
-// require('./tuto.webflow/css/tuto.webflow.css');
+require('./tuto.webflow/css/orders.css');
+require('./tuto.webflow/css/details.css');
 
 var Page = createReactClass({
     render() {
