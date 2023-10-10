@@ -7,7 +7,7 @@ module.exports = {
     mode: 'development',
     devtool: 'inline-source-map',
     output: {
-        path: path.join(__dirname, '../priv/static'),
+        path: path.join(__dirname, '/priv/static'),
         filename: '[name].js',
     },
     optimization: {
