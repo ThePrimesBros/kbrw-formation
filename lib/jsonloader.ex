@@ -7,8 +7,8 @@ defmodule JsonLoader do
         case Poison.decode(json_string) do
           {:ok, json_data} ->
             Enum.each(json_data, fn x ->
-              order_id = Integer.to_string(Enum.count(json_data) + 1)
-              MyServer.Database.add_key_value(database, order_id, x)
+              IO.inspect(x, label: "Mon id est")
+              MyServer.Database.add_key_value(database, x["id"], x)
             end)
             IO.puts("Data loaded successfully")
 
