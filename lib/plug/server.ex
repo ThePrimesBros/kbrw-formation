@@ -36,15 +36,12 @@ defmodule Server.TheCreator do
         Enum.find_value(@routes, fn {route_path, route_block} ->
           if path == route_path do
             {200, route_block}
-          else
-            {nil, :error}
           end
         end)
       end
 
       def call(conn, _opts) do
         path = conn.request_path
-
         case find_route(path) do
           {200, block} ->
             {_, string} = block
@@ -52,7 +49,7 @@ defmodule Server.TheCreator do
             |> Plug.Conn.put_status(200)
             |> Plug.Conn.send_resp(:ok, string)
 
-          {nil, _} ->
+          _ ->
             conn
             |> Plug.Conn.put_status(@error_code)
             |> Plug.Conn.send_resp(:not_found, @error_content)
