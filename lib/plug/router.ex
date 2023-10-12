@@ -11,11 +11,12 @@ defmodule Server.Router do
   # my_get "/me" do
   #   {200, "You are the Second One."}
   # end
+  plug(Plug.Logger)
 
+  plug(Plug.Static, from: "priv/static", at: "/static")
+  plug(:format_header)
   plug(:match)
   plug(:dispatch)
-
-  get("/", do: send_resp(conn, 200, "Welcome"))
 
   get "/search" do
     # Fetch query parameters
@@ -98,7 +99,7 @@ defmodule Server.Router do
   end
 
   # # Get all elements
-  get "/get_all_values" do
+  get "/orders" do
     case MyServer.Database.get_all_values(MyServer.Database) do
       values when length(values) > 0 ->
         values_str =
@@ -166,5 +167,30 @@ defmodule Server.Router do
     end
   end
 
-  match(_, do: send_resp(conn, 404, "Page Not Found"))
+  @orders File.read!("./orders_chunk0.json") |> Poison.decode! |> Enum.take(20)
+
+  get "/api/orders" do
+    conn = fetch_query_params(conn)
+           |> format_header
+           |> put_resp_content_type("application/json")
+
+    json = %{results: @orders, total: 20} |> Poison.encode!
+    send_resp(conn, 200, json)
+  end
+
+
+  get "/api/order/:id" do
+    json = %{id: "nat_order#{id}", id: id} |> Poison.encode!
+    send_resp(conn, 200, json)
+  end
+
+
+  match(_, do: send_file(conn, 200, "priv/static/index.html") )
+
+  defp format_header(conn, _ \\ 0) do
+    conn
+    |> Plug.Conn.put_resp_header("access-control-allow-origin", "*")
+    |> Plug.Conn.put_resp_header("Access-Control-Allow-Headers", "access-control-allow-origin")
+    #|> put_resp_content_type("text/plain")
+  end
 end
