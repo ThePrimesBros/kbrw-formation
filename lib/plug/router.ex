@@ -167,30 +167,47 @@ defmodule Server.Router do
     end
   end
 
-  @orders File.read!("./orders_chunk0.json") |> Poison.decode! |> Enum.take(20)
+  @orders File.read!("./orders_chunk0.json") |> Poison.decode!() |> Enum.take(20)
 
   get "/api/orders" do
-    conn = fetch_query_params(conn)
-           |> format_header
-           |> put_resp_content_type("application/json")
+    conn =
+      fetch_query_params(conn)
+      |> format_header
+      |> put_resp_content_type("application/json")
 
-    json = %{results: @orders, total: 20} |> Poison.encode!
+    json = %{results: @orders, total: 20} |> Poison.encode!()
     send_resp(conn, 200, json)
   end
 
+  @order File.read!("./orders_chunk0.json") |> Poison.decode!() |> Enum.take(20)
+
+  defp find_order_by_id(order_list, id) do
+    case Enum.find(order_list, fn order ->
+           "nat_order#{id}" == Map.get(order, "id")
+         end) do
+      nil -> :error
+      order -> {:ok, order}
+    end
+  end
 
   get "/api/order/:id" do
-    json = %{id: "nat_order#{id}", id: id} |> Poison.encode!
-    send_resp(conn, 200, json)
+    case find_order_by_id(@order, id) do
+      {:ok, order_data} ->
+        json = %{id: id, data: order_data} |> Poison.encode!()
+        send_resp(conn, 200, json)
+
+      :error ->
+        send_resp(conn, 404, "Order not found")
+    end
   end
 
-
-  match(_, do: send_file(conn, 200, "priv/static/index.html") )
+  match(_, do: send_file(conn, 200, "priv/static/index.html"))
 
   defp format_header(conn, _ \\ 0) do
     conn
     |> Plug.Conn.put_resp_header("access-control-allow-origin", "*")
     |> Plug.Conn.put_resp_header("Access-Control-Allow-Headers", "access-control-allow-origin")
-    #|> put_resp_content_type("text/plain")
+
+    # |> put_resp_content_type("text/plain")
   end
 end

@@ -64,9 +64,10 @@ let remoteProps = {
     }
   },
   orders: (props) => {
-    if (!props.user) return
-    var qs = { ...props.qs, user_id: props.user.value.id }
-    var query = Qs.stringify(qs)
+    // if (!props.user) return
+    // , user_id: props.user.value.id
+    var qs = { ...props.qs }
+    var query = Qs.stringify(props.qs)
     return {
       url: "/api/orders" + (query == '' ? '' : '?' + query),
       prop: "orders"
@@ -74,7 +75,7 @@ let remoteProps = {
   },
   order: (props) => {
     return {
-      url: "/get_values/" + props.order_id,
+      url: "/api/order/" + props.order_id,
       prop: "order"
     }
   }
@@ -88,11 +89,43 @@ let Child = createReactClass({
 })
 
 let Layout = createReactClass({
+  modal(spec) {
+    this.setState({
+      modal: {
+        ...spec, callback: (res) => {
+          this.setState({ modal: null }, () => {
+            if (spec.callback) spec.callback(res)
+          })
+        }
+      }
+    })
+  },
   render() {
+    let modal_component = {
+      'delete': (props) => <DeleteModal {...props} />
+    }[this.state.modal && this.state.modal.type];
+
+    modal_component = modal_component && modal_component(this.state.modal)
+
     return <JSXZ in="orders" sel=".layout">
+      <Z sel=".modal-wrapper" className={cn(classNameZ, { 'hidden': !modal_component })}>
+        {modal_component}
+      </Z>
       <Z sel=".container">
         <this.props.Child {...this.props} />
       </Z>
+    </JSXZ>
+  }
+})
+
+let DeleteModal = createReactClass({
+  render() {
+    var props = {
+      ...this.props, modal: this.modal
+    }
+
+    return <JSXZ in="orders" sel=".modal-wrapper">
+      <this.props.Child {...this.props} />
     </JSXZ>
   }
 })
@@ -118,22 +151,70 @@ let Orders = createReactClass({
     remoteProps: [remoteProps.orders]
   },
   render() {
-    console.log(this.props.Child)
+    this.props.modal({
+      type: 'delete',
+      title: 'Order deletion',
+      message: `Are you sure you want to delete this ?`,
+      callback: (value) => {
+        //Do something with the return value
+      }
+    })
     return <JSXZ in="orders" sel=".orders">
-      <Z sel=".orders-container">
-      </Z>
+      {
+        JSON.parse(this.props.orders.value).results.map(order => (<JSXZ in="orders" sel=".list-2" key={order.id}>
+          <Z sel=".id-2">{order.id}</Z>
+          <Z sel=".name-2">{order.custom.customer.full_name}</Z>
+          <Z sel=".adresse-2">{order.custom.billing_address.street}</Z>
+          <Z sel=".items-2">{order.custom.items.length}</Z>
+          <Z sel=".w-button" onClick={(e) => {
+            e.preventDefault()
+            this.props.Link.GoTo("order", { order_id: order.remoteid, order_data: order }, {})
+          }}><ChildrenZ />
+          </Z>
+          <Z sel=".delete"><ChildrenZ /></Z>
+        </JSXZ>))
+      }
     </JSXZ>
   }
 })
 
 let Order = createReactClass({
+  statics: {
+    remoteProps: [remoteProps.order]
+  },
   render() {
-    return <JSXZ in="detail" sel=".container">
-      <Z sel=".container-role">
-      </Z>
+    return <JSXZ in="detail" sel=".container-role">
+      {/* <Z sel=".order-client">{JSON.parse(this.props.order.value).data.custom.customer.full_name}</Z>
+      <Z sel=".order-adress">{JSON.parse(this.props.order.value).data.custom.billing_address.street}</Z>
+      <Z sel=".order-title">{`Commande n° ${JSON.parse(this.props.order.value).id}`}</Z> */}
+      {
+        JSON.parse(this.props.order.value).data.custom.items.map(item => (
+          <JSXZ in="detail" sel=".item-list" key={item.item_id}>
+            <Z sel=".product-name">{item.product_title}</Z>
+            <Z sel=".quantity">{item.quantity_to_fetch}</Z>
+            <Z sel=".unit-price">{item.unit_price}</Z>
+            <Z sel=".total-price">{item.price * item.quantity_to_fetch}</Z>
+          </JSXZ>))
+      }
     </JSXZ>
   }
 })
+
+const cn = function () {
+  var args = arguments, classes = {}
+  for (var i in args) {
+    var arg = args[i]
+    if (!arg) continue
+    if ('string' === typeof arg || 'number' === typeof arg) {
+      arg.split(" ").filter((c) => c != "").map((c) => {
+        classes[c] = true
+      })
+    } else if ('object' === typeof arg) {
+      for (var key in arg) classes[key] = arg[key]
+    }
+  }
+  return Object.keys(classes).map((k) => classes[k] && k || '').join(' ')
+}
 
 function addRemoteProps(props) {
   return new Promise((resolve, reject) => {
@@ -175,14 +256,17 @@ function addRemoteProps(props) {
   })
 }
 
-let GoTo = (route, params, query) => {
-  var qs = Qs.stringify(query)
-  var url = routes[route].path(params) + ((qs == '') ? '' : ('?' + qs))
-  history.pushState({}, "", url)
-  return onPathChange()
+let Link = {
+  GoTo(route, params, query) {
+    var qs = Qs.stringify(query)
+
+    var url = routes[route].path(params.order_id) + ((qs == '') ? '' : ('?' + qs))
+    history.pushState({}, "", url)
+    return onPathChange()
+  }
 }
 
-let browserState = { Child: Child }
+let browserState = { Child: Child, Link: Link }
 
 function onPathChange() {
   var path = location.pathname
@@ -216,10 +300,7 @@ function onPathChange() {
   addRemoteProps(browserState).then(
     (props) => {
       browserState = props
-      //console.log(props)
-      // Log our new browserState
-      console.log("browserState in promise resolved", browserState)
-      // Render our components using our remote data
+
       ReactDOM.render(<Child {...browserState} />, document.getElementById('root'))
     }, (res) => {
       ReactDOM.render(<ErrorPage message={"Shit happened"} code={res.http_code} />, document.getElementById('root'))

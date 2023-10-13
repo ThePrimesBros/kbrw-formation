@@ -2158,7 +2158,23 @@ textarea.w-input, textarea.w-select {
   position: static;
 }
 
+.list-0 {
+  text-align: center;
+  justify-content: space-around;
+  align-items: stretch;
+  list-style-type: none;
+  display: flex;
+}
+
 .list-2 {
+  text-align: center;
+  justify-content: space-around;
+  align-items: stretch;
+  list-style-type: none;
+  display: flex;
+}
+
+.list-1 {
   text-align: center;
   justify-content: space-around;
   align-items: stretch;
