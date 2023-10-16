@@ -1,6 +1,7 @@
 defmodule Server.Router do
   # use Server.TheCreator
   use Plug.Router
+  use JsonLoader
 
   # my_error code: 404, content: "Custom error message enfin si on veut"
 
@@ -33,6 +34,16 @@ defmodule Server.Router do
 
       {:error, _reason} ->
         send_resp(conn, 404, "No matching values found.")
+    end
+  end
+
+  post "/fake-data" do
+    case JsonLoader.load_to_database(MyServer.Database, "./orders_chunk0.json") do
+      {:ok} ->
+        send_resp(conn, 200, "Ok")
+
+      {:error} ->
+        send_resp(conn, 404, "Error")
     end
   end
 
@@ -167,15 +178,18 @@ defmodule Server.Router do
     end
   end
 
-  @orders File.read!("./orders_chunk0.json") |> Poison.decode!() |> Enum.take(20)
-
   get "/api/orders" do
     conn =
       fetch_query_params(conn)
       |> format_header
       |> put_resp_content_type("application/json")
 
-    json = %{results: @orders, total: 20} |> Poison.encode!()
+    data = MyServer.Database.get_all_values(MyServer.Database)
+
+    # Extract only the values from the data array
+    values = Enum.map(data, fn {_key, value} -> value end)
+
+    json = %{results: values, total: 20} |> Poison.encode!()
     send_resp(conn, 200, json)
   end
 
@@ -196,6 +210,15 @@ defmodule Server.Router do
         json = %{id: id, data: order_data} |> Poison.encode!()
         send_resp(conn, 200, json)
 
+      :error ->
+        send_resp(conn, 404, "Order not found")
+    end
+  end
+
+  delete "/api/delete/:id" do
+    case MyServer.Database.delete_key(MyServer.Database, id) do
+      :ok ->
+        send_resp(conn, 200, "Order with ID #{id} deleted")
       :error ->
         send_resp(conn, 404, "Order not found")
     end

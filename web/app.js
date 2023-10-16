@@ -88,44 +88,93 @@ let Child = createReactClass({
   }
 })
 
-let Layout = createReactClass({
-  modal(spec) {
+class Layout extends React.Component {
+  state = {
+    modal: null,
+    loading: false,
+  };
+
+  loader = (promise) => {
+    this.setState({ loading: true }); // Show the loader
+    return new Promise((resolve, reject) => {
+      promise
+        .then((result) => {
+          this.setState({ loading: false }); // Hide the loader
+          resolve(result);
+        })
+        .catch((error) => {
+          this.setState({ loading: false }); // Hide the loader
+          reject(error);
+        });
+    });
+  };
+
+  modal = (spec) => {
     this.setState({
       modal: {
         ...spec, callback: (res) => {
           this.setState({ modal: null }, () => {
-            if (spec.callback) spec.callback(res)
-          })
+            if (spec.callback) spec.callback(res);
+          });
         }
       }
-    })
-  },
+    });
+  };
+
   render() {
-    let modal_component = {
-      'delete': (props) => <DeleteModal {...props} />
-    }[this.state.modal && this.state.modal.type];
+    let props = {
+      ...this.props, modal: this.modal
+    }
+    const { loading } = this.state;
+    let modal_component;
 
-    modal_component = modal_component && modal_component(this.state.modal)
+    if (this.state.modal && this.state.modal.type) {
+      modal_component = {
+        'delete': (props) => <DeleteModal {...props} modalData={this.state.modal} />
+      };
+    }
 
-    return <JSXZ in="orders" sel=".layout">
-      <Z sel=".modal-wrapper" className={cn(classNameZ, { 'hidden': !modal_component })}>
-        {modal_component}
-      </Z>
-      <Z sel=".container">
-        <this.props.Child {...this.props} />
-      </Z>
+    modal_component = modal_component && modal_component[this.state.modal.type](this.state.modal);
+
+    return (
+      <JSXZ in="orders" sel=".layout">
+        <Z sel=".modal-wrapper" className={cn(classNameZ, { 'hidden': !modal_component })}>
+          {modal_component}
+        </Z>
+        <Z sel=".container">
+          {loading ? <Loader /> : null} {/* Render the loader when loading is true */}
+          <this.props.Child {...props} />
+        </Z>
+        <Z sel=".container">
+          <this.props.Child {...props} />
+        </Z>
+      </JSXZ>
+    );
+  }
+};
+
+let DeleteModal = createReactClass({
+  render() {
+    const handleAccept = () => {
+      this.props.callback(this.props.orderId)
+    }
+
+    const handleDecline = () => {
+      this.props.callback();
+    }
+    return <JSXZ in="orders" sel=".modal-container">
+      <Z sel=".modal-title">{this.props.title}</Z>
+      <Z sel=".modal-para">{this.props.message}</Z>
+      <Z sel=".button-accept" onClick={handleAccept}><ChildrenZ /></Z>
+      <Z sel=".button-decline" onClick={handleDecline}><ChildrenZ /></Z>
     </JSXZ>
   }
 })
 
-let DeleteModal = createReactClass({
+let Loader = createReactClass({
   render() {
-    var props = {
-      ...this.props, modal: this.modal
-    }
-
-    return <JSXZ in="orders" sel=".modal-wrapper">
-      <this.props.Child {...this.props} />
+    return <JSXZ in="orders" sel=".loader-wrapper">
+      <Z sel=".loader-container"><ChildrenZ /></Z>
     </JSXZ>
   }
 })
@@ -151,14 +200,25 @@ let Orders = createReactClass({
     remoteProps: [remoteProps.orders]
   },
   render() {
-    this.props.modal({
-      type: 'delete',
-      title: 'Order deletion',
-      message: `Are you sure you want to delete this ?`,
-      callback: (value) => {
-        //Do something with the return value
-      }
-    })
+    const handleClick = (order_id) => {
+      this.props.modal({
+        type: 'delete',
+        title: 'Order deletion',
+        message: `Are you sure you want to delete this ?`,
+        orderId: order_id,
+        callback: (value = "") => {
+          if (value != "") {
+            fetch(`http://localhost:8080/api/delete/${value}`, {
+              method: "DELETE"
+            }).then(function (res) {
+              window.location.assign("http://localhost:8080")
+            })
+          } else {
+            return Promise.resolve();
+          }
+        }
+      })
+    }
     return <JSXZ in="orders" sel=".orders">
       {
         JSON.parse(this.props.orders.value).results.map(order => (<JSXZ in="orders" sel=".list-2" key={order.id}>
@@ -171,7 +231,9 @@ let Orders = createReactClass({
             this.props.Link.GoTo("order", { order_id: order.remoteid, order_data: order }, {})
           }}><ChildrenZ />
           </Z>
-          <Z sel=".delete"><ChildrenZ /></Z>
+          <Z sel=".delete" onClick={(e) = () => handleClick(order.remoteid)}>
+            <ChildrenZ />
+          </Z>
         </JSXZ>))
       }
     </JSXZ>
