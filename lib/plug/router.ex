@@ -178,22 +178,42 @@ defmodule Server.Router do
     end
   end
 
+  # /api/orders - Supports pagination
   get "/api/orders" do
     conn =
       fetch_query_params(conn)
       |> format_header
       |> put_resp_content_type("application/json")
 
-    data = MyServer.Database.get_all_values(MyServer.Database)
+    page = Map.get(conn.query_params, "page", "0") |> String.to_integer()
+    # Get the search query from the query parameters
+    search_query = Map.get(conn.query_params, "q", "")
+    per_page = 30
 
+    case search_query do
+      "" ->
+        search_query = "type:nat_order" # Set the default value
+      _ ->
+        search_query
+        per_page = 100
+    end
+    IO.inspect(search_query)
+    # Update your Riak query to include the search criteria
+    data =
+      MyServer.Riak.search(
+        "rbessonnier_orders_index",
+        search_query,
+        page,
+        per_page
+      )
+      |> Enum.map(&Map.get(&1, "key"))
+    IO.inspect(data)
     # Extract only the values from the data array
-    values = Enum.map(data, fn {_key, value} -> value end)
+    values = Enum.map(data, fn x -> MyServer.Riak.get(x) end)
 
-    json = %{results: values, total: 20} |> Poison.encode!()
+    json = %{results: values} |> Poison.encode!()
     send_resp(conn, 200, json)
   end
-
-  @order File.read!("./orders_chunk0.json") |> Poison.decode!() |> Enum.take(20)
 
   defp find_order_by_id(order_list, id) do
     case Enum.find(order_list, fn order ->
@@ -205,20 +225,22 @@ defmodule Server.Router do
   end
 
   get "/api/order/:id" do
-    case find_order_by_id(@order, id) do
-      {:ok, order_data} ->
-        json = %{id: id, data: order_data} |> Poison.encode!()
-        send_resp(conn, 200, json)
+    data =
+      MyServer.Riak.search("rbessonnier_orders_index", "remoteid:#{id}", 0, 30)
+      |> Enum.map(&Map.get(&1, "key"))
 
-      :error ->
-        send_resp(conn, 404, "Order not found")
-    end
+    IO.inspect(hd(data))
+    values = MyServer.Riak.get(hd(data))
+
+    json = %{id: id, data: values} |> Poison.encode!()
+    send_resp(conn, 200, json)
   end
 
   delete "/api/delete/:id" do
-    case MyServer.Database.delete_key(MyServer.Database, id) do
+    case MyServer.Riak.delete_key(id) do
       :ok ->
         send_resp(conn, 200, "Order with ID #{id} deleted")
+
       :error ->
         send_resp(conn, 404, "Order not found")
     end

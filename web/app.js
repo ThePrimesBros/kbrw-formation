@@ -92,6 +92,8 @@ class Layout extends React.Component {
   state = {
     modal: null,
     loading: false,
+    searchQuery: "",
+    page: 0,
   };
 
   loader = (promise) => {
@@ -121,9 +123,36 @@ class Layout extends React.Component {
     });
   };
 
+  handlePageChange = (delta) => {
+    const newPage = this.state.page + delta;
+    if (newPage < 0) {
+      return; // Prevent going below 0
+    }
+
+    this.setState({ page: newPage }, () => {
+      // Update the URL after the state has changed
+      const url = new URL(window.location.href);
+      url.href = url.href.replace("#", "")
+
+      url.searchParams.set('page', newPage);
+      window.history.replaceState(null, '', url.toString());
+    });
+  }
+
+  handleQueryChange = () => {
+    let searchQuery = document.getElementsByClassName(".url-changer");
+    this.setState({searchQuery: searchQuery}), () => {
+      const url = new URL(window.location.href);
+      url.href = url.href.replace("#", "")
+
+      url.searchParams.set('q', newPage);
+      window.history.replaceState(null, '', url.toString());
+    }
+  }
+
   render() {
     let props = {
-      ...this.props, modal: this.modal
+      ...this.props, modal: this.modal,
     }
     const { loading } = this.state;
     let modal_component;
@@ -145,9 +174,13 @@ class Layout extends React.Component {
           {loading ? <Loader /> : null} {/* Render the loader when loading is true */}
           <this.props.Child {...props} />
         </Z>
+        <Z sel=".url-changer"><ChildrenZ /></Z>
+        <Z sel=".button-url" onClick={this.handleQueryChange}><ChildrenZ /></Z>
         <Z sel=".container">
           <this.props.Child {...props} />
         </Z>
+        <Z sel=".btn-previous" onClick={() => this.handlePageChange(-1)}><ChildrenZ /></Z>
+        <Z sel=".btn-next" onClick={() => this.handlePageChange(1)}><ChildrenZ /></Z>
       </JSXZ>
     );
   }
@@ -199,6 +232,7 @@ let Orders = createReactClass({
   statics: {
     remoteProps: [remoteProps.orders]
   },
+
   render() {
     const handleClick = (order_id) => {
       this.props.modal({
@@ -219,10 +253,11 @@ let Orders = createReactClass({
         }
       })
     }
+
     return <JSXZ in="orders" sel=".orders">
       {
         JSON.parse(this.props.orders.value).results.map(order => (<JSXZ in="orders" sel=".list-2" key={order.id}>
-          <Z sel=".id-2">{order.id}</Z>
+          <Z sel=".id-2">{order.remoteid}</Z>
           <Z sel=".name-2">{order.custom.customer.full_name}</Z>
           <Z sel=".adresse-2">{order.custom.billing_address.street}</Z>
           <Z sel=".items-2">{order.custom.items.length}</Z>
@@ -358,7 +393,7 @@ function onPathChange() {
     ...routeProps,
     route: route
   }
-  //console.log("browserState in onPathChange", browserState)
+  // console.log("browserState in onPathChange", browserState)
   addRemoteProps(browserState).then(
     (props) => {
       browserState = props
