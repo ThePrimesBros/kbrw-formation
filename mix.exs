@@ -3,11 +3,12 @@ defmodule Formation.MixProject do
 
   def project do
     [
-      app: :formation,
+      app: :tutokbrwstack,
       version: "0.1.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      compilers: [:reaxt_webpack] ++ Mix.compilers
     ]
   end
 
@@ -15,7 +16,7 @@ defmodule Formation.MixProject do
   def application do
     [
       extra_applications: [:logger, :inets, :ssl],
-      mod: {Formation.Application, []}
+      mod: {TutoKbrwStack, []}
     ]
   end
 
@@ -27,6 +28,7 @@ defmodule Formation.MixProject do
       {:poison, "~> 4.0"},
       {:plug_cowboy, "~> 2.4"},
       {:json, "~> 1.4"},
+      {:reaxt, tag: "v4.0.2", github: "kbrw/reaxt"},
     ]
   end
 end

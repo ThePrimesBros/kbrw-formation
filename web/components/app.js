@@ -1,14 +1,15 @@
-require('!!file-loader?name=[name].[ext]!./index.html')
+require('!!file-loader?name=[name].[ext]!./../layout.html.eex')
 
-let ReactDOM = require('react-dom')
+let ReactDOM = require('react-dom');
 let React = require("react")
 let createReactClass = require('create-react-class')
 let Qs = require('qs')
 let Cookie = require('cookie')
-let XMLHttpRequest = require("xhr2")
+let localhost = require('reaxt/config').localhost
+let XMLHttpRequest = require("xhr2") // External XmlHTTPReq on browser, xhr2 on server
 
-require('./tuto.webflow/css/orders.css');
-require('./tuto.webflow/css/details.css');
+require('../tuto.webflow/css/orders.css');
+require('../tuto.webflow/css/details.css');
 
 let routes = {
   "orders": {
@@ -24,7 +25,7 @@ let routes = {
       return "/order/" + params;
     },
     match: (path, qs) => {
-      var r = new RegExp("/order/([^/]*)$").exec(path)
+      let r = new RegExp("/order/([^/]*)$").exec(path)
       return r && { handlerPath: [Layout, Header, Order], order_id: r[1] } // Note that we use the "&&" expression to simulate a IF statement
     }
   }
@@ -36,24 +37,27 @@ let HTTP = new (function () {
   this.post = (url, data) => this.req('POST', url, data)
   this.put = (url, data) => this.req('PUT', url, data)
 
-  this.req = (method, url, data) => new Promise((resolve, reject) => {
-    var req = new XMLHttpRequest()
-    req.open(method, url)
-    req.responseType = "text"
-    req.setRequestHeader("accept", "application/json,*/*;0.8")
-    req.setRequestHeader("content-type", "application/json")
-    req.onload = () => {
-      if (req.status >= 200 && req.status < 300) {
-        resolve(req.responseText && req.responseText)
-      } else {
+  this.req = (method, url, data) => {
+    return new Promise((resolve, reject) => {
+      let req = new XMLHttpRequest()
+      url = (typeof window !== 'undefined') ? url : localhost + url
+      req.open(method, url)
+      req.responseType = "text"
+      req.setRequestHeader("accept", "application/json,*/*;0.8")
+      req.setRequestHeader("content-type", "application/json")
+      req.onload = () => {
+        if (req.status >= 200 && req.status < 300) {
+          resolve(req.responseText && req.responseText)
+        } else {
+          reject({ http_code: req.status })
+        }
+      }
+      req.onerror = (err) => {
         reject({ http_code: req.status })
       }
-    }
-    req.onerror = (err) => {
-      reject({ http_code: req.status })
-    }
-    req.send(data && JSON.stringify(data))
-  })
+      req.send(data && JSON.stringify(data))
+    })
+  }
 })()
 
 let remoteProps = {
@@ -66,8 +70,8 @@ let remoteProps = {
   orders: (props) => {
     // if (!props.user) return
     // , user_id: props.user.value.id
-    var qs = { ...props.qs }
-    var query = Qs.stringify(props.qs)
+    let qs = { ...props.qs }
+    let query = Qs.stringify(props.qs)
     return {
       url: "/api/orders" + (query == '' ? '' : '?' + query),
       prop: "orders"
@@ -83,7 +87,7 @@ let remoteProps = {
 
 let Child = createReactClass({
   render() {
-    var [ChildHandler, ...rest] = this.props.handlerPath
+    let [ChildHandler, ...rest] = this.props.handlerPath
     return <ChildHandler {...this.props} handlerPath={rest} />
   }
 })
@@ -141,7 +145,7 @@ class Layout extends React.Component {
 
   handleQueryChange = () => {
     let searchQuery = document.getElementsByClassName(".url-changer");
-    this.setState({searchQuery: searchQuery}), () => {
+    this.setState({ searchQuery: searchQuery }), () => {
       const url = new URL(window.location.href);
       url.href = url.href.replace("#", "")
 
@@ -263,7 +267,7 @@ let Orders = createReactClass({
           <Z sel=".items-2">{order.custom.items.length}</Z>
           <Z sel=".w-button" onClick={(e) => {
             e.preventDefault()
-            this.props.Link.GoTo("order", { order_id: order.remoteid, order_data: order }, {})
+            this.props.Link.GoTo("order", order.remoteid, {})
           }}><ChildrenZ />
           </Z>
           <Z sel=".delete" onClick={(e) = () => handleClick(order.remoteid)}>
@@ -297,17 +301,56 @@ let Order = createReactClass({
   }
 })
 
+let Link = createReactClass({
+  statics: {
+    renderFunc: null, //render function to use (differently set depending if we are server sided or client sided)
+    GoTo(route, params, query) {// function used to change the path of our browser
+      let qs = Qs.stringify(query)
+      let url = routes[route].path(params) + ((qs == '') ? '' : ('?' + qs))
+      history.pushState({}, "", url)
+      Link.onPathChange()
+    },
+    onPathChange() { //Updated onPathChange
+      let path = location.pathname
+      let qs = Qs.parse(location.search.slice(1))
+      let cookies = Cookie.parse(document.cookie)
+      inferPropsChange(path, qs, cookies).then( //inferPropsChange download the new props if the url query changed as done previously
+        () => {
+          Link.renderFunc(<Child {...browserState} />) //if we are on server side we render
+        }, ({ http_code }) => {
+          Link.renderFunc(<ErrorPage message={"Not Found"} code={http_code} />, http_code) //idem
+        }
+      )
+    },
+    LinkTo: (route, params, query) => {
+      let qs = Qs.stringify(query)
+      return routes[route].path(params) + ((qs == '') ? '' : ('?' + qs))
+    }
+  },
+  onClick(ev) {
+    ev.preventDefault();
+    Link.GoTo(this.props.to, this.props.params, this.props.query);
+  },
+  render() {//render a <Link> this way transform link into href path which allows on browser without javascript to work perfectly on the website
+    return (
+      <a href={Link.LinkTo(this.props.to, this.props.params, this.props.query)} onClick={this.onClick}>
+        {this.props.children}
+      </a>
+    )
+  }
+})
+
 const cn = function () {
-  var args = arguments, classes = {}
-  for (var i in args) {
-    var arg = args[i]
+  let args = arguments, classes = {}
+  for (let i in args) {
+    let arg = args[i]
     if (!arg) continue
     if ('string' === typeof arg || 'number' === typeof arg) {
       arg.split(" ").filter((c) => c != "").map((c) => {
         classes[c] = true
       })
     } else if ('object' === typeof arg) {
-      for (var key in arg) classes[key] = arg[key]
+      for (let key in arg) classes[key] = arg[key]
     }
   }
   return Object.keys(classes).map((k) => classes[k] && k || '').join(' ')
@@ -353,56 +396,115 @@ function addRemoteProps(props) {
   })
 }
 
-let Link = {
-  GoTo(route, params, query) {
-    var qs = Qs.stringify(query)
+// let GoTo = (route, params, query) => {
+//   let qs = Qs.stringify(query)
+//   let url = routes[route].path(params) + ((qs=='') ? '' : ('?'+qs))
+//   history.pushState({}, "", url)
+//   return onPathChange()
+// }
 
-    var url = routes[route].path(params.order_id) + ((qs == '') ? '' : ('?' + qs))
-    history.pushState({}, "", url)
-    return onPathChange()
-  }
-}
+// let oldBrowserState = { Child: Child, GoTo: GoTo }
 
-let browserState = { Child: Child, Link: Link }
+// function onPathChange() {
+//   let path = location.pathname
+//   let qs = Qs.parse(location.search.slice(1))
+//   let cookies = Cookie.parse(document.cookie)
 
-function onPathChange() {
-  var path = location.pathname
-  var qs = Qs.parse(location.search.slice(1))
-  var cookies = Cookie.parse(document.cookie)
+//   oldBrowserState = {
+//     ...oldBrowserState,
+//     path: path,
+//     qs: qs,
+//     cookie: cookies
+//   }
+//   let route
 
+//   for (let key in routes) {
+//     routeProps = routes[key].match(path, qs)
+//     if (routeProps) {
+//       route = key
+//       break;
+//     }
+//   }
+
+//   if (!route) return ReactDOM.render(<ErrorPage message={"Not Found"} code={404} />, document.getElementById('root'))
+
+//   oldBrowserState = {
+//     ...oldBrowserState,
+//     ...routeProps,
+//     route: route
+//   }
+//   // console.log("browserState in onPathChange", browserState)
+//   addRemoteProps(oldBrowserState).then(
+//     (props) => {
+//       browserState = props
+
+//       ReactDOM.render(<Child {...browserState} />, document.getElementById('root'))
+//     }, (res) => {
+//       ReactDOM.render(<ErrorPage message={"Shit happened"} code={res.http_code} />, document.getElementById('root'))
+//     })
+// }
+
+let browserState = {}
+
+function inferPropsChange(path, query, cookies) { // the second part of the onPathChange function have been moved here
   browserState = {
     ...browserState,
-    path: path,
-    qs: qs,
-    cookie: cookies
+    path: path, qs: query,
+    Link: Link,
+    Child: Child
   }
-  let route
 
-  for (var key in routes) {
-    routeProps = routes[key].match(path, qs)
+  let route, routeProps
+  for (let key in routes) {
+    routeProps = routes[key].match(path, query)
     if (routeProps) {
       route = key
-      break;
+      break
     }
   }
 
-  if (!route) return ReactDOM.render(<ErrorPage message={"Not Found"} code={404} />, document.getElementById('root'))
-
+  if (!route) {
+    return new Promise((res, reject) => reject({ http_code: 404 }))
+  }
   browserState = {
     ...browserState,
     ...routeProps,
     route: route
   }
-  // console.log("browserState in onPathChange", browserState)
-  addRemoteProps(browserState).then(
+
+  return addRemoteProps(browserState).then(
     (props) => {
       browserState = props
-
-      ReactDOM.render(<Child {...browserState} />, document.getElementById('root'))
-    }, (res) => {
-      ReactDOM.render(<ErrorPage message={"Shit happened"} code={res.http_code} />, document.getElementById('root'))
     })
 }
 
-window.addEventListener("popstate", () => { onPathChange() })
-onPathChange() // We also call onPathChange once when the js is loaded
+module.exports = {
+  reaxt_server_render(params, render) {
+    browserState = {}
+    inferPropsChange(params.path, params.query, params.cookies)
+      .then(() => {
+        render(<Child {...browserState} />)
+      }, (err) => {
+        render(<ErrorPage message={"Not Found"} code={err.http_code} />, err.http_code)
+      })
+  },
+  reaxt_client_render(initialProps, render) {
+    // Retrieve initial props to render from Reaxt (the one use on server-side) then render
+    browserState = {
+      ...initialProps
+    }
+
+    // clean it to remove badly transmitted props
+    Object.keys(initialProps).map((k) => {
+      let val = initialProps[k]
+      if (val && val.value) browserState[k] = val
+    })
+
+    Link.renderFunc = render
+
+    window.addEventListener("popstate", () => {
+      Link.onPathChange()
+    }) // inferProps and render on history change
+    Link.onPathChange()
+  }
+}
