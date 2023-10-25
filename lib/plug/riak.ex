@@ -1,7 +1,6 @@
 defmodule MyServer.Riak do
   def url, do: "https://kbrw-sb-tutoex-riak-gateway.kbrw.fr"
 
-
   def auth_header do
     username = "sophomore"
     password = "jlessthan3tutoex"
@@ -21,6 +20,7 @@ defmodule MyServer.Riak do
 
   def add_object(object) do
     IO.inspect(object)
+
     {:ok, {{_, 201, _message}, _headers, body}} =
       :httpc.request(
         :post,
@@ -87,7 +87,7 @@ defmodule MyServer.Riak do
         []
       )
 
-      Poison.decode!(body)
+    Poison.decode!(body)
   end
 
   def update_key(key, value) do
@@ -95,12 +95,34 @@ defmodule MyServer.Riak do
       :httpc.request(
         :put,
         {'#{MyServer.Riak.url()}/buckets/bessonnier_order/keys/#{key}',
-         MyServer.Riak.auth_header(), 'application/json', value},
+         MyServer.Riak.auth_header(), 'application/json', Poison.encode!(value)},
         [],
         []
       )
 
     :ok
+  end
+
+  def initialize_commands() do
+    MyServer.Riak.get_keys()
+    |> Enum.map(fn key ->
+      case MyServer.Riak.get(key) do
+        %{"status" => %{"state" => "init"}} ->
+          IO.inspect("Status is already 'init' for key #{key}. Skipping update.")
+
+        existing_data ->
+          updated_data =
+            Map.update!(existing_data, "status", fn status ->
+              Map.update!(status, "state", fn _state -> "init" end)
+            end)
+          MyServer.Riak.update_key(key, Poison.encode!(updated_data))
+        _error ->
+          IO.inspect(_error)
+          nil
+          # Handle the case when you can't fetch the existing data
+          # Log an error or take appropriate action
+      end
+    end)
   end
 
   ##########################################################################
@@ -119,6 +141,7 @@ defmodule MyServer.Riak do
         [],
         []
       )
+
     IO.inspect(_code)
     :ok
   end
@@ -133,7 +156,8 @@ defmodule MyServer.Riak do
         [],
         []
       )
-      IO.inspect(_code)
+
+    IO.inspect(_code)
     :ok
   end
 
@@ -147,7 +171,8 @@ defmodule MyServer.Riak do
         [],
         []
       )
-      IO.inspect(_code)
+
+    IO.inspect(_code)
     :ok
   end
 
@@ -214,7 +239,7 @@ defmodule MyServer.Riak do
     {:ok, {{_, _code, _message}, _headers, body}} =
       :httpc.request(
         :get,
-        {'#{MyServer.Riak.url()}/search/query/#{index}/?wt=json&q=#{query}&start=#{page*rows}&rows=#{rows}',
+        {'#{MyServer.Riak.url()}/search/query/#{index}/?wt=json&q=#{query}&start=#{page * rows}&rows=#{rows}',
          MyServer.Riak.auth_header()},
         [],
         []

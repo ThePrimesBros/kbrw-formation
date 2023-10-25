@@ -18,7 +18,7 @@ defmodule TutoKbrwStack do
 
     children = [
       {Plug.Cowboy, scheme: :http, plug: Server.Router, options: [port: 8080]},
-      worker(MyServer.Database, [])
+      {MyServer.FSMSupervisor, []},
     ]
 
     opts = [strategy: :one_for_one, name: TutoKbrwStack.Supervisor]

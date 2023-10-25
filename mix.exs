@@ -29,6 +29,7 @@ defmodule Formation.MixProject do
       {:plug_cowboy, "~> 2.4"},
       {:json, "~> 1.4"},
       {:reaxt, tag: "v4.0.2", github: "kbrw/reaxt"},
+      {:exfsm, git: "https://github.com/kbrw/exfsm.git"},
     ]
   end
 end

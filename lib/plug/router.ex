@@ -3,21 +3,17 @@ defmodule Server.Router do
   use Plug.Router
   use JsonLoader
   require EEx
-  # my_error code: 404, content: "Custom error message enfin si on veut"
-
-  # my_get "/" do
-  #   {200, "Welcome to the new world of Plugs!"}
-  # end
-
-  # my_get "/me" do
-  #   {200, "You are the Second One."}
-  # end
+  use Ewebmachine.Builder.Resources
 
   plug(Plug.Static, at: "/public", from: :tutokbrwstack)
   EEx.function_from_file(:defp, :layout, "./web/layout.html.eex", [:render])
 
   plug(:match)
   plug(:dispatch)
+
+  plug :resource_match
+  plug Ewebmachine.Plug.Run
+  plug Ewebmachine.Plug.Send
   # plug(Plug.Logger)
 
   get "/" do
@@ -56,11 +52,9 @@ defmodule Server.Router do
           "type:nat_order"
         _ ->
           IO.inspect(search_query)
-          per_page = 100
           search_query
       end
 
-    IO.inspect(search_query, label: "Searh query")
     # Update your Riak query to include the search criteria
     data =
       MyServer.Riak.search(
@@ -75,7 +69,7 @@ defmodule Server.Router do
     # Extract only the values from the data array
     values = Enum.map(data, fn x -> MyServer.Riak.get(x) end)
 
-    json = %{results: values} |> Poison.encode!()
+    json = %{results: values } |> Poison.encode!()
     send_resp(conn, 200, json)
   end
 
@@ -95,6 +89,22 @@ defmodule Server.Router do
     case MyServer.Riak.delete_key(id) do
       :ok ->
         send_resp(conn, 200, "Order with ID #{id} deleted")
+
+      :error ->
+        send_resp(conn, 404, "Order not found")
+    end
+  end
+
+  put "/api/pay/:id" do
+    data =
+      MyServer.Riak.search("rbessonnier_orders_index", "remoteid:#{id}", 0, 30)
+      |> Enum.map(&Map.get(&1, "key"))
+    #IO.inspect(Registry.lookup(FSM.Registry, {hd(data), :order_registry}))
+    {:ok, pid} = MyServer.FSMSupervisor.start_child(hd(data))
+
+    case MyServer.Payment.update_order(pid, hd(data)) do
+      :ok ->
+        send_resp(conn, 200, "Change status on the payment")
 
       :error ->
         send_resp(conn, 404, "Order not found")

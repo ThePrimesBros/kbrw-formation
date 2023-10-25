@@ -258,6 +258,16 @@ let Orders = createReactClass({
       })
     }
 
+    const handlePay = (order_id) => {
+      if (order_id != "") {
+        fetch(`http://localhost:8080/api/pay/${order_id}`, {
+          method: "PUT"
+        }).then(function (res) {
+          window.location.assign("http://localhost:8080")
+        })
+      }
+    }
+    console.log(this)
     return <JSXZ in="orders" sel=".orders">
       {
         JSON.parse(this.props.orders.value).results.map(order => (<JSXZ in="orders" sel=".list-2" key={order.id}>
@@ -265,12 +275,16 @@ let Orders = createReactClass({
           <Z sel=".name-2">{order.custom.customer.full_name}</Z>
           <Z sel=".adresse-2">{order.custom.billing_address.street}</Z>
           <Z sel=".items-2">{order.custom.items.length}</Z>
+          <Z sel=".status-2">{order.status.state}</Z>
           <Z sel=".w-button" onClick={(e) => {
             e.preventDefault()
             this.props.Link.GoTo("order", order.remoteid, {})
           }}><ChildrenZ />
           </Z>
           <Z sel=".delete" onClick={(e) = () => handleClick(order.remoteid)}>
+            <ChildrenZ />
+          </Z>
+          <Z sel=".pay" onClick={(e) = () => handlePay(order.remoteid)}>
             <ChildrenZ />
           </Z>
         </JSXZ>))
