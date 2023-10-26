@@ -22,6 +22,7 @@ defmodule MyServer.Payment do
 
   def handle_cast(order, server) do
     # Use ExFSM to perform the transition
+    IO.inspect(order)
     {:next_state, updated_order} =
     case ExFSM.Machine.State.state_name(MyServer.Riak.get(order)) do
       :not_verified -> ExFSM.Machine.event(MyServer.Riak.get(order), {:verification, []})

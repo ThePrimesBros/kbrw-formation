@@ -260,17 +260,16 @@ let Orders = createReactClass({
 
     const handlePay = (order_id) => {
       if (order_id != "") {
-        fetch(`http://localhost:8080/api/pay/${order_id}`, {
-          method: "PUT"
-        }).then(function (res) {
+        HTTP.put(`http://localhost:8080/api/pay/${order_id}`, {}).then(function (res) {
+          console.log(res)
           window.location.assign("http://localhost:8080")
         })
       }
     }
-    console.log(this)
+
     return <JSXZ in="orders" sel=".orders">
       {
-        JSON.parse(this.props.orders.value).results.map(order => (<JSXZ in="orders" sel=".list-2" key={order.id}>
+        JSON.parse(this.props.orders.value).map(order => (<JSXZ in="orders" sel=".list-2" key={order.id}>
           <Z sel=".id-2">{order.remoteid}</Z>
           <Z sel=".name-2">{order.custom.customer.full_name}</Z>
           <Z sel=".adresse-2">{order.custom.billing_address.street}</Z>
@@ -288,6 +287,9 @@ let Orders = createReactClass({
             <ChildrenZ />
           </Z>
         </JSXZ>))
+        // <JSXZ in="orders" sel=".list-2">
+        //   <Z sel=".id-2">Test</Z>
+        // </JSXZ>
       }
     </JSXZ>
   }
@@ -298,12 +300,13 @@ let Order = createReactClass({
     remoteProps: [remoteProps.order]
   },
   render() {
+    //console.log(JSON.parse(this.props.order.value))
     return <JSXZ in="detail" sel=".container-role">
       {/* <Z sel=".order-client">{JSON.parse(this.props.order.value).data.custom.customer.full_name}</Z>
       <Z sel=".order-adress">{JSON.parse(this.props.order.value).data.custom.billing_address.street}</Z>
       <Z sel=".order-title">{`Commande n° ${JSON.parse(this.props.order.value).id}`}</Z> */}
       {
-        JSON.parse(this.props.order.value).data.custom.items.map(item => (
+        JSON.parse(this.props.order.value).custom.items.map(item => (
           <JSXZ in="detail" sel=".item-list" key={item.item_id}>
             <Z sel=".product-name">{item.product_title}</Z>
             <Z sel=".quantity">{item.quantity_to_fetch}</Z>
@@ -311,6 +314,7 @@ let Order = createReactClass({
             <Z sel=".total-price">{item.price * item.quantity_to_fetch}</Z>
           </JSXZ>))
       }
+        {/* <Z sel=".product-name">Test</Z> */}
     </JSXZ>
   }
 })

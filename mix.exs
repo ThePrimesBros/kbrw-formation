@@ -30,6 +30,7 @@ defmodule Formation.MixProject do
       {:json, "~> 1.4"},
       {:reaxt, tag: "v4.0.2", github: "kbrw/reaxt"},
       {:exfsm, git: "https://github.com/kbrw/exfsm.git"},
+      {:ewebmachine, "2.2.0"}
     ]
   end
 end

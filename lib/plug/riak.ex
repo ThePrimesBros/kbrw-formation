@@ -239,7 +239,7 @@ defmodule MyServer.Riak do
     {:ok, {{_, _code, _message}, _headers, body}} =
       :httpc.request(
         :get,
-        {'#{MyServer.Riak.url()}/search/query/#{index}/?wt=json&q=#{query}&start=#{page * rows}&rows=#{rows}',
+        {'#{MyServer.Riak.url()}/search/query/#{index}/?wt=json&q=#{query}&start=#{page * rows}&rows=#{rows}&sort=remoteid',
          MyServer.Riak.auth_header()},
         [],
         []
